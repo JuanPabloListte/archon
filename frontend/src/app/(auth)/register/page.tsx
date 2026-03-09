@@ -35,8 +35,8 @@ export default function RegisterPage() {
     <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="w-12 h-12 bg-archon-500 rounded-xl flex items-center justify-center mx-auto mb-4">
-            <span className="text-white font-bold text-xl">A</span>
+          <div className="mx-auto mb-4 w-16 h-16 rounded-xl overflow-hidden">
+            <img src="/img/logo-background.png" alt="Archon" className="w-full h-full" />
           </div>
           <h1 className="text-2xl font-bold text-white">Create account</h1>
           <p className="text-gray-400 mt-1">Start auditing your systems</p>

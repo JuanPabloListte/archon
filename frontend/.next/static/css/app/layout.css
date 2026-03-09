@@ -590,6 +590,12 @@ video {
 .h-\[600px\] {
   height: 600px;
 }
+.h-16 {
+  height: 4rem;
+}
+.h-full {
+  height: 100%;
+}
 .min-h-screen {
   min-height: 100vh;
 }
@@ -616,6 +622,9 @@ video {
 }
 .w-full {
   width: 100%;
+}
+.w-16 {
+  width: 4rem;
 }
 .min-w-0 {
   min-width: 0px;
