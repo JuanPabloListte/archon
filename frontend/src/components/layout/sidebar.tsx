@@ -25,8 +25,8 @@ export function Sidebar() {
     <aside className="w-60 bg-gray-900 border-r border-gray-800 flex flex-col min-h-screen">
       <div className="px-6 py-5 border-b border-gray-800">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg overflow-hidden">
-            <img src="/img/logo-background.png" alt="Archon" className="w-full h-full" />
+          <div className="w-12 h-12">
+            <img src="/img/logo-w-bg.png" alt="Archon" className="w-full h-full" style={{ mixBlendMode: "screen" }} />
           </div>
           <span className="text-white font-semibold text-lg">Archon</span>
         </div>
