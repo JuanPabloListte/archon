@@ -25,6 +25,13 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return res.json()
 }
 
+export interface DashboardStats {
+  total_projects: number
+  total_findings: number
+  avg_health_score: number | null
+  projects_audited: number
+}
+
 export const api = {
   auth: {
     login: (email: string, password: string) =>
@@ -37,6 +44,9 @@ export const api = {
         method: "POST",
         body: JSON.stringify({ email, password }),
       }),
+  },
+  dashboard: {
+    stats: () => request<DashboardStats>("/api/v1/dashboard/stats"),
   },
   projects: {
     list: () => request<import("@/types").Project[]>("/api/v1/projects"),
@@ -62,6 +72,14 @@ export const api = {
       request<{ message: string; project_id: string }>(`/api/v1/audits/run/${projectId}`, { method: "POST" }),
     findings: (projectId: string) =>
       request<import("@/types").Finding[]>(`/api/v1/audits/findings/${projectId}`),
+    insights: (projectId: string) =>
+      request<{ prioritized: { id: string; severity: string; title: string }[]; summary: string }>(
+        `/api/v1/audits/insights/${projectId}`
+      ),
+    findingAdvice: (findingId: string) =>
+      request<{ finding_id: string; recommendations: string }>(
+        `/api/v1/audits/findings/${findingId}/advice`
+      ),
   },
   reports: {
     latest: (projectId: string) =>

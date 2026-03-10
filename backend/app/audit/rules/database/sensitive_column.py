@@ -12,7 +12,7 @@ def check(tables: list[DbTable], project_id: str) -> list[AuditFinding]:
         for col in (table.columns or []):
             col_name = col.get("name", "").lower()
             col_type = col.get("type", "").lower()
-            if col_name in SENSITIVE_NAMES and "text" in col_type or "varchar" in col_type or "char" in col_type:
+            if col_name in SENSITIVE_NAMES and ("text" in col_type or "varchar" in col_type or "char" in col_type):
                 findings.append(AuditFinding(
                     project_id=project_id,
                     severity="high",

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { Header } from "@/components/layout/header"
 import { StatsCard } from "@/components/dashboard/stats-card"
-import { api } from "@/lib/api"
+import { api, DashboardStats } from "@/lib/api"
 import { Project } from "@/types"
 import { FolderOpen, AlertTriangle, CheckCircle, Activity } from "lucide-react"
 import Link from "next/link"
@@ -11,10 +11,17 @@ import { Spinner } from "@/components/ui/spinner"
 
 export default function DashboardPage() {
   const [projects, setProjects] = useState<Project[]>([])
+  const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    api.projects.list().then(setProjects).finally(() => setLoading(false))
+    Promise.all([
+      api.projects.list(),
+      api.dashboard.stats(),
+    ]).then(([p, s]) => {
+      setProjects(p)
+      setStats(s)
+    }).finally(() => setLoading(false))
   }, [])
 
   return (
@@ -26,10 +33,14 @@ export default function DashboardPage() {
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <StatsCard title="Total Projects" value={projects.length} icon={FolderOpen} />
-            <StatsCard title="Systems Monitored" value={projects.length} icon={Activity} />
-            <StatsCard title="Active Audits" value={0} icon={AlertTriangle} />
-            <StatsCard title="Health Avg" value="—" icon={CheckCircle} />
+            <StatsCard title="Total Projects" value={stats?.total_projects ?? 0} icon={FolderOpen} />
+            <StatsCard title="Projects Audited" value={stats?.projects_audited ?? 0} icon={Activity} />
+            <StatsCard title="Total Findings" value={stats?.total_findings ?? 0} icon={AlertTriangle} />
+            <StatsCard
+              title="Health Avg"
+              value={stats?.avg_health_score != null ? `${stats.avg_health_score}` : "—"}
+              icon={CheckCircle}
+            />
           </div>
 
           <div>
