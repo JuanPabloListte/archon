@@ -20,6 +20,8 @@ class Settings(BaseSettings):
 
     EMBEDDING_DIM: int = 768
 
+    CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:3001"]
+
     class Config:
         env_file = ".env"
 
