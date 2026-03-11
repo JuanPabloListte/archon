@@ -2,24 +2,77 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #0f1117;
-  --foreground: #e2e8f0;
+/* ── Theme variables (toggle via .dark class on <html>) ── */
+html {
+  --bg-page:    #f3f4f6;
+  --bg-surface: #ffffff;
+  --bg-card:    #ffffff;
+  --bg-muted:   #f3f4f6;
+  --bg-subtle:  #e5e7eb;
+  --bg-input:   #ffffff;
+
+  --text-1: #111827;
+  --text-2: #374151;
+  --text-3: #6b7280;
+  --text-4: #9ca3af;
+
+  --border-1: #e5e7eb;
+  --border-2: #d1d5db;
+
+  --scrollbar-track: #e5e7eb;
+  --scrollbar-thumb: #9ca3af;
+}
+
+html.dark {
+  --bg-page:    #0f1117;
+  --bg-surface: #111827;
+  --bg-card:    #1f2937;
+  --bg-muted:   #374151;
+  --bg-subtle:  #4b5563;
+  --bg-input:   #374151;
+
+  --text-1: #f9fafb;
+  --text-2: #e5e7eb;
+  --text-3: #9ca3af;
+  --text-4: #6b7280;
+
+  --border-1: #374151;
+  --border-2: #4b5563;
+
+  --scrollbar-track: #1a1d27;
+  --scrollbar-thumb: #374151;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--bg-page);
+  color: var(--text-1);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  transition: background 0.2s, color 0.2s;
 }
 
-::-webkit-scrollbar {
-  width: 6px;
+/* ── Theme utility classes (work without Tailwind dark: prefix) ── */
+@layer utilities {
+  .bg-page    { background-color: var(--bg-page); }
+  .bg-surface { background-color: var(--bg-surface); }
+  .bg-card    { background-color: var(--bg-card); }
+  .bg-muted   { background-color: var(--bg-muted); }
+  .bg-subtle  { background-color: var(--bg-subtle); }
+  .bg-inp     { background-color: var(--bg-input); }
+
+  .t1 { color: var(--text-1); }
+  .t2 { color: var(--text-2); }
+  .t3 { color: var(--text-3); }
+  .t4 { color: var(--text-4); }
+
+  .bd1 { border-color: var(--border-1); }
+  .bd2 { border-color: var(--border-2); }
+
+  .hover-muted:hover   { background-color: var(--bg-muted); }
+  .hover-subtle:hover  { background-color: var(--bg-subtle); }
+  .hover-t1:hover      { color: var(--text-1); }
+  .hover-bd2:hover     { border-color: var(--border-2); }
 }
-::-webkit-scrollbar-track {
-  background: #1a1d27;
-}
-::-webkit-scrollbar-thumb {
-  background: #374151;
-  border-radius: 3px;
-}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }

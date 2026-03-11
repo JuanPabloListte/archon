@@ -43,3 +43,8 @@ pgdata/
 .pytest_cache/
 .coverage
 htmlcov/
+
+# ── ML model cache ───────────────────────────────────────
+backend/.cache/
+*.bin
+*.safetensors

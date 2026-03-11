@@ -12,7 +12,9 @@ class User(SQLModel, table=True):
     __tablename__ = "users"
     id: str = Field(default_factory=gen_uuid, primary_key=True)
     email: str = Field(unique=True, index=True)
-    password_hash: str
+    password_hash: Optional[str] = None
+    google_id: Optional[str] = Field(default=None, index=True)
+    avatar_url: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
     projects: List["Project"] = Relationship(back_populates="owner")
 
@@ -76,6 +78,7 @@ class AuditFinding(SQLModel, table=True):
     recommendation: str
     resource_type: Optional[str] = None
     resource_id: Optional[str] = None
+    source: str = Field(default="rule")  # "rule" | "ai"
     created_at: datetime = Field(default_factory=datetime.utcnow)
     project: Optional[Project] = Relationship(back_populates="findings")
 
@@ -87,6 +90,19 @@ class Embedding(SQLModel, table=True):
     source_id: str
     content: str = Field(sa_column=Column(Text))
     embedding: List[float] = Field(sa_column=Column(Vector(768)))
+
+class UserCredential(SQLModel, table=True):
+    __tablename__ = "user_credentials"
+    id: str = Field(default_factory=gen_uuid, primary_key=True)
+    user_id: str = Field(foreign_key="users.id", index=True)
+    provider: str  # anthropic | openai | gemini | groq | mistral | ollama | custom
+    label: Optional[str] = None
+    api_key_encrypted: Optional[str] = None
+    model: str
+    base_url: Optional[str] = None
+    is_active: bool = False
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
 
 class Report(SQLModel, table=True):
     __tablename__ = "reports"

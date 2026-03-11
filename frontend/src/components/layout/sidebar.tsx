@@ -3,34 +3,38 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { clsx } from "clsx"
-import { LayoutDashboard, FolderOpen, LogOut } from "lucide-react"
-import { removeToken } from "@/lib/auth"
-import { useRouter } from "next/navigation"
-
-const nav = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/projects", label: "Projects", icon: FolderOpen },
-]
+import { LayoutDashboard, FolderOpen, KeyRound } from "lucide-react"
+import { useI18n } from "@/lib/i18n"
+import { UserMenu } from "./user-menu"
+import { useEffect, useState } from "react"
+import { api } from "@/lib/api"
 
 export function Sidebar() {
   const pathname = usePathname()
-  const router = useRouter()
+  const { t } = useI18n()
+  const [email, setEmail] = useState<string | undefined>()
+  const [avatarUrl, setAvatarUrl] = useState<string | undefined>()
 
-  function logout() {
-    removeToken()
-    router.push("/login")
-  }
+  useEffect(() => {
+    api.users.me().then(u => { setEmail(u.email); setAvatarUrl(u.avatar_url) }).catch(() => null)
+  }, [])
+
+  const nav = [
+    { href: "/dashboard",    label: t("dashboard"),    icon: LayoutDashboard },
+    { href: "/projects",     label: t("projects"),     icon: FolderOpen },
+    { href: "/credentials",  label: "Credentials",     icon: KeyRound },
+  ]
 
   return (
-    <aside className="w-60 bg-gray-900 border-r border-gray-800 flex flex-col min-h-screen">
-      <div className="px-6 py-5 border-b border-gray-800">
-        <div className="flex items-center gap-2">
-          <div className="w-12 h-12">
-            <img src="/img/logo-w-bg.png" alt="Archon" className="w-full h-full" style={{ mixBlendMode: "screen" }} />
+    <aside className="w-60 bg-surface border-r bd1 flex flex-col h-screen sticky top-0 shrink-0">
+      <div className="px-6 py-5 border-b bd1">
+        <Link href="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+          <div className="w-12 h-12 rounded-lg overflow-hidden">
+            <img src="/img/logo-w-bg.png" alt="Archon" className="w-full h-full object-cover" />
           </div>
-          <span className="text-white font-semibold text-lg">Archon</span>
-        </div>
-        <p className="text-gray-500 text-xs mt-1">AI System Auditor</p>
+          <span className="t1 font-semibold text-lg">Archon</span>
+        </Link>
+        <p className="t4 text-xs mt-1">AI System Auditor</p>
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-1">
@@ -42,7 +46,7 @@ export function Sidebar() {
               "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
               pathname.startsWith(href)
                 ? "bg-archon-500/20 text-archon-400"
-                : "text-gray-400 hover:text-white hover:bg-gray-800"
+                : "t3 hover-muted hover-t1"
             )}
           >
             <Icon className="w-4 h-4" />
@@ -51,14 +55,8 @@ export function Sidebar() {
         ))}
       </nav>
 
-      <div className="px-3 py-4 border-t border-gray-800">
-        <button
-          onClick={logout}
-          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-400 hover:text-red-400 hover:bg-gray-800 transition-colors w-full"
-        >
-          <LogOut className="w-4 h-4" />
-          Sign out
-        </button>
+      <div className="px-3 py-4 border-t bd1">
+        <UserMenu email={email} avatarUrl={avatarUrl} />
       </div>
     </aside>
   )

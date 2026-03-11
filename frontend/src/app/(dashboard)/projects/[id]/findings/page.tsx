@@ -22,17 +22,14 @@ export default function FindingsPage() {
     api.audits.findings(id).then(setFindings).finally(() => setLoading(false))
   }, [id])
 
-  const sorted = [...findings].sort(
-    (a, b) => SEVERITY_ORDER.indexOf(a.severity) - SEVERITY_ORDER.indexOf(b.severity)
-  )
+  const sorted = [...findings].sort((a, b) => SEVERITY_ORDER.indexOf(a.severity) - SEVERITY_ORDER.indexOf(b.severity))
   const filtered = filter === "all" ? sorted : sorted.filter(f => f.severity === filter || f.category === filter)
-
   const counts = findings.reduce((acc, f) => ({ ...acc, [f.severity]: (acc[f.severity] || 0) + 1 }), {} as Record<string, number>)
 
   return (
     <div>
       <div className="mb-6">
-        <Link href={`/projects/${id}`} className="text-gray-400 hover:text-white text-sm flex items-center gap-1 mb-4">
+        <Link href={`/projects/${id}`} className="t3 hover-t1 text-sm flex items-center gap-1 mb-4 transition-colors">
           <ArrowLeft className="w-4 h-4" /> Back to project
         </Link>
         <Header title="Audit Findings" subtitle={`${findings.length} issues detected`} />
@@ -44,9 +41,7 @@ export default function FindingsPage() {
             key={s}
             onClick={() => setFilter(s)}
             className={`px-3 py-1 rounded-full text-sm font-medium capitalize transition-colors ${
-              filter === s
-                ? "bg-archon-500 text-white"
-                : "bg-gray-800 text-gray-400 hover:text-white border border-gray-700"
+              filter === s ? "bg-archon-500 text-white" : "bg-muted t3 hover-t1 border bd1"
             }`}
           >
             {s} {s !== "all" && counts[s] ? `(${counts[s]})` : ""}
@@ -57,10 +52,8 @@ export default function FindingsPage() {
       {loading ? (
         <div className="flex justify-center py-20"><Spinner /></div>
       ) : filtered.length === 0 ? (
-        <div className="bg-gray-800 border border-gray-700 rounded-xl p-12 text-center">
-          <p className="text-gray-400">
-            {findings.length === 0 ? "No findings yet. Run an audit first." : "No findings match the filter."}
-          </p>
+        <div className="bg-card border bd1 rounded-xl p-12 text-center">
+          <p className="t3">{findings.length === 0 ? "No findings yet. Run an audit first." : "No findings match the filter."}</p>
         </div>
       ) : (
         <div className="space-y-3">

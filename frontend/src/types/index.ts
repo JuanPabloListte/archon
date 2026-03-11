@@ -16,6 +16,9 @@ export interface Connection {
   project_id: string
   type: "openapi" | "database" | "logs"
   created_at: string
+  status: "ingesting" | "done" | "error" | null
+  ingestion_error: string | null
+  ingested_count: number | null
 }
 
 export interface Finding {
@@ -26,6 +29,18 @@ export interface Finding {
   title: string
   description: string
   recommendation: string
+  source: "rule" | "ai"
+  created_at: string
+}
+
+export interface Credential {
+  id: string
+  provider: string
+  label: string | null
+  api_key_masked: string | null
+  model: string
+  base_url: string | null
+  is_active: boolean
   created_at: string
 }
 

@@ -25,45 +25,34 @@ export default function ReportPage() {
   return (
     <div>
       <div className="mb-6">
-        <Link href={`/projects/${id}`} className="text-gray-400 hover:text-white text-sm flex items-center gap-1 mb-4">
+        <Link href={`/projects/${id}`} className="t3 hover-t1 text-sm flex items-center gap-1 mb-4 transition-colors">
           <ArrowLeft className="w-4 h-4" /> Back to project
         </Link>
         <Header title="Technical Report" subtitle={report ? `Generated ${new Date(report.created_at).toLocaleString()}` : undefined} />
       </div>
 
       {!report ? (
-        <div className="bg-gray-800 border border-gray-700 rounded-xl p-12 text-center">
-          <p className="text-gray-400">No report found. Run an audit to generate one.</p>
+        <div className="bg-card border bd1 rounded-xl p-12 text-center">
+          <p className="t3">No report found. Run an audit to generate one.</p>
         </div>
       ) : (
         <div className="space-y-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Card>
-              <p className="text-gray-400 text-sm">Health Score</p>
-              <p className={`text-3xl font-bold mt-1 ${report.health_score >= 80 ? "text-green-400" : report.health_score >= 60 ? "text-yellow-400" : "text-red-400"}`}>
+              <p className="t3 text-sm">Health Score</p>
+              <p className={`text-3xl font-bold mt-1 ${report.health_score >= 80 ? "text-green-500" : report.health_score >= 60 ? "text-yellow-500" : "text-red-500"}`}>
                 {report.health_score}/100
               </p>
             </Card>
-            <Card>
-              <p className="text-gray-400 text-sm">Endpoints</p>
-              <p className="text-3xl font-bold text-white mt-1">{report.report_json?.overview.total_endpoints ?? 0}</p>
-            </Card>
-            <Card>
-              <p className="text-gray-400 text-sm">DB Tables</p>
-              <p className="text-3xl font-bold text-white mt-1">{report.report_json?.overview.total_tables ?? 0}</p>
-            </Card>
-            <Card>
-              <p className="text-gray-400 text-sm">Total Issues</p>
-              <p className="text-3xl font-bold text-white mt-1">{report.report_json?.overview.total_findings ?? 0}</p>
-            </Card>
+            <Card><p className="t3 text-sm">Endpoints</p><p className="text-3xl font-bold t1 mt-1">{report.report_json?.overview.total_endpoints ?? 0}</p></Card>
+            <Card><p className="t3 text-sm">DB Tables</p><p className="text-3xl font-bold t1 mt-1">{report.report_json?.overview.total_tables ?? 0}</p></Card>
+            <Card><p className="t3 text-sm">Total Issues</p><p className="text-3xl font-bold t1 mt-1">{report.report_json?.overview.total_findings ?? 0}</p></Card>
           </div>
 
           {report.summary && (
             <Card>
               <CardHeader><CardTitle>Executive Summary</CardTitle></CardHeader>
-              <CardContent>
-                <p className="text-gray-300">{report.summary}</p>
-              </CardContent>
+              <CardContent><p className="t2">{report.summary}</p></CardContent>
             </Card>
           )}
 
@@ -75,7 +64,7 @@ export default function ReportPage() {
                   {Object.entries(report.report_json.findings_by_severity).map(([sev, count]) => (
                     <div key={sev} className="flex items-center gap-2">
                       <Badge variant={sev as "critical" | "high" | "medium" | "low" | "info"}>{sev}</Badge>
-                      <span className="text-white font-semibold">{count}</span>
+                      <span className="t1 font-semibold">{count}</span>
                     </div>
                   ))}
                 </div>
@@ -89,14 +78,14 @@ export default function ReportPage() {
               <CardContent>
                 <div className="space-y-3">
                   {report.report_json.findings.map(f => (
-                    <div key={f.id} className="bg-gray-700/50 rounded-lg p-4">
+                    <div key={f.id} className="bg-muted rounded-lg p-4">
                       <div className="flex gap-2 mb-2 flex-wrap">
                         <Badge variant={f.severity as "critical" | "high" | "medium" | "low" | "info"}>{f.severity}</Badge>
                         <Badge variant={f.category as "api" | "database" | "security" | "performance"}>{f.category}</Badge>
                       </div>
-                      <p className="text-white font-medium mb-1">{f.title}</p>
-                      <p className="text-gray-400 text-sm mb-2">{f.description}</p>
-                      <p className="text-xs text-gray-500">Fix: {f.recommendation}</p>
+                      <p className="t1 font-medium mb-1">{f.title}</p>
+                      <p className="t3 text-sm mb-2">{f.description}</p>
+                      <p className="text-xs t4">Fix: {f.recommendation}</p>
                     </div>
                   ))}
                 </div>

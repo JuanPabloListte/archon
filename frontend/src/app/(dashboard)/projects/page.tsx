@@ -20,35 +20,23 @@ export default function ProjectsPage() {
   const [description, setDescription] = useState("")
   const [error, setError] = useState("")
 
-  useEffect(() => {
-    load()
-  }, [])
+  useEffect(() => { load() }, [])
 
   async function load() {
     setLoading(true)
-    try {
-      const data = await api.projects.list()
-      setProjects(data)
-    } finally {
-      setLoading(false)
-    }
+    try { setProjects(await api.projects.list()) }
+    finally { setLoading(false) }
   }
 
   async function createProject(e: React.FormEvent) {
-    e.preventDefault()
-    setCreating(true)
-    setError("")
+    e.preventDefault(); setCreating(true); setError("")
     try {
       const project = await api.projects.create(name, description || undefined)
       setProjects(prev => [project, ...prev])
-      setShowForm(false)
-      setName("")
-      setDescription("")
+      setShowForm(false); setName(""); setDescription("")
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to create project")
-    } finally {
-      setCreating(false)
-    }
+    } finally { setCreating(false) }
   }
 
   async function deleteProject(id: string) {
@@ -62,24 +50,21 @@ export default function ProjectsPage() {
       <div className="flex items-center justify-between mb-8">
         <Header title="Projects" subtitle="Manage your audited systems" />
         <Button onClick={() => setShowForm(!showForm)} size="sm">
-          <Plus className="w-4 h-4 mr-1" />
-          New Project
+          <Plus className="w-4 h-4 mr-1" /> New Project
         </Button>
       </div>
 
       {showForm && (
-        <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 mb-6">
-          <h3 className="text-white font-semibold mb-4">Create New Project</h3>
+        <div className="bg-card border bd1 rounded-xl p-6 mb-6">
+          <h3 className="t1 font-semibold mb-4">Create New Project</h3>
           <form onSubmit={createProject} className="space-y-4">
-            <div>
-              <Label htmlFor="name">Project Name</Label>
+            <div><Label htmlFor="name">Project Name</Label>
               <Input id="name" value={name} onChange={e => setName(e.target.value)} placeholder="My API Service" required />
             </div>
-            <div>
-              <Label htmlFor="desc">Description (optional)</Label>
+            <div><Label htmlFor="desc">Description (optional)</Label>
               <Input id="desc" value={description} onChange={e => setDescription(e.target.value)} placeholder="Describe the system..." />
             </div>
-            {error && <p className="text-red-400 text-sm">{error}</p>}
+            {error && <p className="text-red-500 text-sm">{error}</p>}
             <div className="flex gap-2">
               <Button type="submit" loading={creating}>Create</Button>
               <Button type="button" variant="secondary" onClick={() => setShowForm(false)}>Cancel</Button>
@@ -91,32 +76,26 @@ export default function ProjectsPage() {
       {loading ? (
         <div className="flex justify-center py-20"><Spinner /></div>
       ) : projects.length === 0 ? (
-        <div className="bg-gray-800 border border-gray-700 rounded-xl p-12 text-center">
-          <FolderOpen className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-          <p className="text-gray-400 mb-2">No projects yet.</p>
-          <Button onClick={() => setShowForm(true)} size="sm">
-            <Plus className="w-4 h-4 mr-1" />
-            Create your first project
-          </Button>
+        <div className="bg-card border bd1 rounded-xl p-12 text-center">
+          <FolderOpen className="w-12 h-12 t4 mx-auto mb-3" />
+          <p className="t3 mb-2">No projects yet.</p>
+          <Button onClick={() => setShowForm(true)} size="sm"><Plus className="w-4 h-4 mr-1" />Create your first project</Button>
         </div>
       ) : (
         <div className="grid gap-3">
           {projects.map(p => (
-            <div key={p.id} className="bg-gray-800 border border-gray-700 hover:border-gray-600 rounded-xl p-5 flex items-center justify-between transition-colors">
+            <div key={p.id} className="bg-card border bd1 hover-bd2 rounded-xl p-5 flex items-center justify-between transition-colors">
               <div>
-                <p className="text-white font-medium">{p.name}</p>
-                {p.description && <p className="text-gray-400 text-sm mt-0.5">{p.description}</p>}
-                <p className="text-gray-600 text-xs mt-1">{new Date(p.created_at).toLocaleDateString()}</p>
+                <p className="t1 font-medium">{p.name}</p>
+                {p.description && <p className="t3 text-sm mt-0.5">{p.description}</p>}
+                <p className="t4 text-xs mt-1">{new Date(p.created_at).toLocaleDateString()}</p>
               </div>
               <div className="flex items-center gap-2">
                 <Button variant="ghost" size="sm" onClick={() => deleteProject(p.id)}>
                   <Trash2 className="w-4 h-4 text-red-400" />
                 </Button>
                 <Link href={`/projects/${p.id}`}>
-                  <Button variant="secondary" size="sm">
-                    Open
-                    <ArrowRight className="w-4 h-4 ml-1" />
-                  </Button>
+                  <Button variant="secondary" size="sm">Open <ArrowRight className="w-4 h-4 ml-1" /></Button>
                 </Link>
               </div>
             </div>

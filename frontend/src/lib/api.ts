@@ -48,6 +48,19 @@ export const api = {
   dashboard: {
     stats: () => request<DashboardStats>("/api/v1/dashboard/stats"),
   },
+  users: {
+    me: () => request<{ id: string; email: string; created_at: string; avatar_url?: string }>("/api/v1/users/me"),
+    updateMe: (email: string) =>
+      request<{ id: string; email: string; created_at: string }>("/api/v1/users/me", {
+        method: "PATCH",
+        body: JSON.stringify({ email }),
+      }),
+    changePassword: (current_password: string, new_password: string) =>
+      request<void>("/api/v1/users/me/password", {
+        method: "POST",
+        body: JSON.stringify({ current_password, new_password }),
+      }),
+  },
   projects: {
     list: () => request<import("@/types").Project[]>("/api/v1/projects"),
     create: (name: string, description?: string) =>
@@ -66,6 +79,8 @@ export const api = {
       }),
     list: (projectId: string) =>
       request<import("@/types").Connection[]>(`/api/v1/connections/project/${projectId}`),
+    delete: (connectionId: string) =>
+      request<void>(`/api/v1/connections/${connectionId}`, { method: "DELETE" }),
   },
   audits: {
     run: (projectId: string) =>
@@ -92,6 +107,29 @@ export const api = {
       request<{ answer: string; sources: unknown[] }>("/api/v1/chat", {
         method: "POST",
         body: JSON.stringify({ project_id: projectId, question }),
+      }),
+  },
+  credentials: {
+    list: () => request<import("@/types").Credential[]>("/api/v1/credentials"),
+    create: (data: { provider: string; label?: string; api_key?: string; model: string; base_url?: string }) =>
+      request<import("@/types").Credential>("/api/v1/credentials", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    update: (id: string, data: { label?: string; api_key?: string; model?: string; base_url?: string }) =>
+      request<import("@/types").Credential>(`/api/v1/credentials/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      }),
+    delete: (id: string) => request<void>(`/api/v1/credentials/${id}`, { method: "DELETE" }),
+    activate: (id: string) =>
+      request<import("@/types").Credential>(`/api/v1/credentials/${id}/activate`, { method: "POST" }),
+    deactivate: (id: string) =>
+      request<import("@/types").Credential>(`/api/v1/credentials/${id}/deactivate`, { method: "POST" }),
+    models: (provider: string, api_key?: string, base_url?: string) =>
+      request<{ models: string[] }>("/api/v1/credentials/models", {
+        method: "POST",
+        body: JSON.stringify({ provider, api_key, base_url }),
       }),
   },
 }

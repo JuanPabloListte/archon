@@ -11,27 +11,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [checking, setChecking] = useState(true)
 
   useEffect(() => {
-    if (!isAuthenticated()) {
-      router.replace("/login")
-    } else {
-      setChecking(false)
-    }
+    if (!isAuthenticated()) router.replace("/login")
+    else setChecking(false)
   }, [router])
 
-  if (checking) {
-    return (
-      <div className="flex min-h-screen bg-gray-950 items-center justify-center">
-        <Spinner />
-      </div>
-    )
-  }
+  if (checking) return (
+    <div className="flex min-h-screen bg-page items-center justify-center">
+      <Spinner />
+    </div>
+  )
 
   return (
-    <div className="flex min-h-screen bg-gray-950">
+    <div className="flex min-h-screen bg-page">
       <Sidebar />
-      <main className="flex-1 p-8 overflow-y-auto">
-        {children}
-      </main>
+      <main className="flex-1 p-8 overflow-y-auto">{children}</main>
     </div>
   )
 }
