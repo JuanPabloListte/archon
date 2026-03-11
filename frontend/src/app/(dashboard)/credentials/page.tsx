@@ -11,51 +11,57 @@ import { Label } from "@/components/ui/label"
 // ── Provider icons (SVG) ──────────────────────────────────────────────────────
 const ProviderIcons: Record<string, React.FC<{ size?: number }>> = {
   anthropic: ({ size = 20 }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <path d="M13.8 3h-3.6L4 21h3.8l1.3-3.6h5.8L16.2 21H20L13.8 3zm-3.6 11.2 1.8-5 1.8 5H10.2z" fill="currentColor"/>
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+    >
+      <path d="M16.7645 5H13.4568L19.3799 20H22.6107L16.7645 5ZM7.22604 5L1.37988 20H4.68758L5.99527 16.8462H12.1491L13.3799 19.9231H16.6876L10.6876 5H7.30296H7.22604ZM6.91834 14.0769L8.91834 8.76923L10.9953 14.0769H6.99527H6.91834Z" />
     </svg>
   ),
   openai: ({ size = 20 }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M22.28 9.93a5.77 5.77 0 0 0-.5-4.73 5.9 5.9 0 0 0-6.36-2.83A5.9 5.9 0 0 0 11 .63a5.9 5.9 0 0 0-5.62 4.08 5.9 5.9 0 0 0-3.94 2.87 5.9 5.9 0 0 0 .73 6.9 5.77 5.77 0 0 0 .5 4.73 5.9 5.9 0 0 0 6.36 2.83A5.88 5.88 0 0 0 13 23.37a5.9 5.9 0 0 0 5.63-4.09 5.9 5.9 0 0 0 3.93-2.86 5.9 5.9 0 0 0-.28-6.49zM13 21.77a4.37 4.37 0 0 1-2.8-1.02l.14-.08 4.65-2.68a.76.76 0 0 0 .38-.66v-6.55l1.97 1.14a.07.07 0 0 1 .04.05v5.42A4.41 4.41 0 0 1 13 21.77zM3.55 17.9a4.37 4.37 0 0 1-.52-2.96l.14.08 4.65 2.68a.75.75 0 0 0 .76 0l5.68-3.28v2.27a.07.07 0 0 1-.03.06L9.5 19.4A4.41 4.41 0 0 1 3.55 17.9zm-1.14-9.6a4.37 4.37 0 0 1 2.28-1.92v5.51a.75.75 0 0 0 .38.65l5.67 3.27-1.97 1.14a.07.07 0 0 1-.07 0L4.1 14.3a4.41 4.41 0 0 1-1.69-6zm16.2 3.79-5.68-3.28 1.97-1.14a.07.07 0 0 1 .07 0l4.59 2.65a4.4 4.4 0 0 1-.68 7.94v-5.52a.76.76 0 0 0-.27-.65zm1.96-3-.14-.08-4.64-2.7a.76.76 0 0 0-.76 0L9.35 9.6V7.33a.07.07 0 0 1 .03-.06l4.59-2.65a4.4 4.4 0 0 1 6.6 4.57zM8.28 12.9 6.3 11.76a.07.07 0 0 1-.04-.06V6.3a4.4 4.4 0 0 1 7.22-3.38l-.14.08L8.7 5.68a.75.75 0 0 0-.38.65l-.04 6.57zm1.07-2.3 2.53-1.46 2.52 1.45v2.9l-2.52 1.46-2.53-1.46v-2.9z"/>
+      <path d="M22.28 9.93a5.77 5.77 0 0 0-.5-4.73 5.9 5.9 0 0 0-6.36-2.83A5.9 5.9 0 0 0 11 .63a5.9 5.9 0 0 0-5.62 4.08 5.9 5.9 0 0 0-3.94 2.87 5.9 5.9 0 0 0 .73 6.9 5.77 5.77 0 0 0 .5 4.73 5.9 5.9 0 0 0 6.36 2.83A5.88 5.88 0 0 0 13 23.37a5.9 5.9 0 0 0 5.63-4.09 5.9 5.9 0 0 0 3.93-2.86 5.9 5.9 0 0 0-.28-6.49zM13 21.77a4.37 4.37 0 0 1-2.8-1.02l.14-.08 4.65-2.68a.76.76 0 0 0 .38-.66v-6.55l1.97 1.14a.07.07 0 0 1 .04.05v5.42A4.41 4.41 0 0 1 13 21.77zM3.55 17.9a4.37 4.37 0 0 1-.52-2.96l.14.08 4.65 2.68a.75.75 0 0 0 .76 0l5.68-3.28v2.27a.07.07 0 0 1-.03.06L9.5 19.4A4.41 4.41 0 0 1 3.55 17.9zm-1.14-9.6a4.37 4.37 0 0 1 2.28-1.92v5.51a.75.75 0 0 0 .38.65l5.67 3.27-1.97 1.14a.07.07 0 0 1-.07 0L4.1 14.3a4.41 4.41 0 0 1-1.69-6zm16.2 3.79-5.68-3.28 1.97-1.14a.07.07 0 0 1 .07 0l4.59 2.65a4.4 4.4 0 0 1-.68 7.94v-5.52a.76.76 0 0 0-.27-.65zm1.96-3-.14-.08-4.64-2.7a.76.76 0 0 0-.76 0L9.35 9.6V7.33a.07.07 0 0 1 .03-.06l4.59-2.65a4.4 4.4 0 0 1 6.6 4.57zM8.28 12.9 6.3 11.76a.07.07 0 0 1-.04-.06V6.3a4.4 4.4 0 0 1 7.22-3.38l-.14.08L8.7 5.68a.75.75 0 0 0-.38.65l-.04 6.57zm1.07-2.3 2.53-1.46 2.52 1.45v2.9l-2.52 1.46-2.53-1.46v-2.9z" />
     </svg>
   ),
   gemini: ({ size = 20 }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <path d="M12 2C12 2 14.5 9.5 22 12C14.5 14.5 12 22 12 22C12 22 9.5 14.5 2 12C9.5 9.5 12 2 12 2Z" fill="currentColor"/>
+      <path d="M12 2C12 2 14.5 9.5 22 12C14.5 14.5 12 22 12 22C12 22 9.5 14.5 2 12C9.5 9.5 12 2 12 2Z" fill="currentColor" />
     </svg>
   ),
   groq: ({ size = 20 }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2zm0 3.5a6.5 6.5 0 0 1 5.5 9.96V12a5.5 5.5 0 1 0-5.5 5.5h3v1.83A6.5 6.5 0 0 1 12 5.5z"/>
+      <path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2zm0 3.5a6.5 6.5 0 0 1 5.5 9.96V12a5.5 5.5 0 1 0-5.5 5.5h3v1.83A6.5 6.5 0 0 1 12 5.5z" />
     </svg>
   ),
   mistral: ({ size = 20 }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-      <rect x="2"  y="2"  width="5" height="5"/>
-      <rect x="9"  y="2"  width="5" height="5"/>
-      <rect x="16" y="2"  width="6" height="5"/>
-      <rect x="16" y="9"  width="6" height="5"/>
-      <rect x="9"  y="9"  width="5" height="5"/>
-      <rect x="2"  y="9"  width="5" height="5"/>
-      <rect x="2"  y="16" width="5" height="6"/>
-      <rect x="16" y="16" width="6" height="6"/>
+      <rect x="2" y="2" width="5" height="5" />
+      <rect x="9" y="2" width="5" height="5" />
+      <rect x="16" y="2" width="6" height="5" />
+      <rect x="16" y="9" width="6" height="5" />
+      <rect x="9" y="9" width="5" height="5" />
+      <rect x="2" y="9" width="5" height="5" />
+      <rect x="2" y="16" width="5" height="6" />
+      <rect x="16" y="16" width="6" height="6" />
     </svg>
   ),
   ollama: ({ size = 20 }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-      <circle cx="9" cy="7" r="2.5"/>
-      <circle cx="15" cy="7" r="2.5"/>
-      <path d="M5 13c0-3.87 3.13-7 7-7s7 3.13 7 7v5a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-5z"/>
-      <circle cx="9.5" cy="14" r="1" fill="white"/>
-      <circle cx="14.5" cy="14" r="1" fill="white"/>
+      <circle cx="9" cy="7" r="2.5" />
+      <circle cx="15" cy="7" r="2.5" />
+      <path d="M5 13c0-3.87 3.13-7 7-7s7 3.13 7 7v5a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-5z" />
+      <circle cx="9.5" cy="14" r="1" fill="white" />
+      <circle cx="14.5" cy="14" r="1" fill="white" />
     </svg>
   ),
   custom: ({ size = 20 }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="3"/>
-      <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>
-      <path d="M12 2v2m0 16v2M2 12h2m16 0h2"/>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14" />
+      <path d="M12 2v2m0 16v2M2 12h2m16 0h2" />
     </svg>
   ),
 }
@@ -102,10 +108,10 @@ const PROVIDERS: Record<string, {
 
 function detectProviderFromKey(key: string): string | null {
   if (key.startsWith("sk-ant-")) return "anthropic"
-  if (key.startsWith("AIza"))    return "gemini"
-  if (key.startsWith("gsk_"))    return "groq"
+  if (key.startsWith("AIza")) return "gemini"
+  if (key.startsWith("gsk_")) return "groq"
   // openai last since "sk-" is a subset of "sk-ant-"
-  if (key.startsWith("sk-"))     return "openai"
+  if (key.startsWith("sk-")) return "openai"
   return null
 }
 
@@ -121,7 +127,7 @@ function ProviderBadge({ provider, size = "md" }: { provider: string; size?: "sm
       className={`${sz} rounded-lg flex items-center justify-center shrink-0`}
       style={{ background: color + "22", color, border: `1px solid ${color}44` }}
     >
-      {Icon ? <Icon size={iconSz} /> : <span className="font-bold text-xs">{provider.slice(0,2).toUpperCase()}</span>}
+      {Icon ? <Icon size={iconSz} /> : <span className="font-bold text-xs">{provider.slice(0, 2).toUpperCase()}</span>}
     </div>
   )
 }
@@ -133,9 +139,8 @@ function CredentialCard({ cred, onActivate, onDeactivate, onEdit, onDelete }: {
 }) {
   const p = PROVIDERS[cred.provider]
   return (
-    <div className={`bg-card border rounded-xl p-4 flex items-center gap-4 transition-colors ${
-      cred.is_active ? "border-archon-500/50 shadow-[0_0_0_1px_rgba(var(--archon-500),0.2)]" : "bd1"
-    }`}>
+    <div className={`bg-card border rounded-xl p-4 flex items-center gap-4 transition-colors ${cred.is_active ? "border-archon-500/50 shadow-[0_0_0_1px_rgba(var(--archon-500),0.2)]" : "bd1"
+      }`}>
       <ProviderBadge provider={cred.provider} />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
@@ -194,16 +199,16 @@ function CredentialForm({ initial, onSave, onClose }: {
   onSave: (data: { provider: string; label: string; api_key: string; model: string; base_url: string }) => Promise<void>
   onClose: () => void
 }) {
-  const [provider, setProvider]       = useState(initial?.provider ?? "anthropic")
-  const [label, setLabel]             = useState(initial?.label ?? "")
-  const [apiKey, setApiKey]           = useState("")
-  const [model, setModel]             = useState(initial?.model ?? "")
-  const [baseUrl, setBaseUrl]         = useState(initial?.base_url ?? "")
-  const [showKey, setShowKey]         = useState(false)
-  const [loading, setLoading]         = useState(false)
-  const [error, setError]             = useState("")
+  const [provider, setProvider] = useState(initial?.provider ?? "anthropic")
+  const [label, setLabel] = useState(initial?.label ?? "")
+  const [apiKey, setApiKey] = useState("")
+  const [model, setModel] = useState(initial?.model ?? "")
+  const [baseUrl, setBaseUrl] = useState(initial?.base_url ?? "")
+  const [showKey, setShowKey] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
   const [detectedFrom, setDetectedFrom] = useState<string | null>(null)
-  const [models, setModels]           = useState<string[]>([])
+  const [models, setModels] = useState<string[]>([])
   const [modelsLoading, setModelsLoading] = useState(false)
   const [modelsError, setModelsError] = useState("")
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -301,11 +306,10 @@ function CredentialForm({ initial, onSave, onClose }: {
                       key={id}
                       type="button"
                       onClick={() => handleProviderChange(id)}
-                      className={`flex flex-col items-center gap-1.5 p-2.5 rounded-xl border text-xs font-medium transition-all ${
-                        provider === id
+                      className={`flex flex-col items-center gap-1.5 p-2.5 rounded-xl border text-xs font-medium transition-all ${provider === id
                           ? "border-archon-500/60 bg-archon-500/10 text-archon-400"
                           : "bd1 t3 hover-muted hover-t1"
-                      }`}
+                        }`}
                     >
                       <div
                         className="w-8 h-8 rounded-lg flex items-center justify-center"
@@ -315,7 +319,7 @@ function CredentialForm({ initial, onSave, onClose }: {
                           border: `1px solid ${info.color}44`,
                         }}
                       >
-                        {Icon ? <Icon size={15} /> : <span className="font-bold">{info.name.slice(0,2)}</span>}
+                        {Icon ? <Icon size={15} /> : <span className="font-bold">{info.name.slice(0, 2)}</span>}
                       </div>
                       <span className="truncate w-full text-center leading-tight">{info.name}</span>
                     </button>
@@ -379,8 +383,8 @@ function CredentialForm({ initial, onSave, onClose }: {
               {modelsLoading && (
                 <span className="text-xs t3 flex items-center gap-1.5">
                   <svg className="animate-spin w-3 h-3" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
                   </svg>
                   Loading models…
                 </span>
@@ -440,10 +444,10 @@ function CredentialForm({ initial, onSave, onClose }: {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function CredentialsPage() {
-  const [creds, setCreds]       = useState<Credential[]>([])
-  const [loading, setLoading]   = useState(true)
+  const [creds, setCreds] = useState<Credential[]>([])
+  const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [editing, setEditing]   = useState<Credential | null>(null)
+  const [editing, setEditing] = useState<Credential | null>(null)
 
   async function load() {
     try { setCreds(await api.credentials.list()) }
