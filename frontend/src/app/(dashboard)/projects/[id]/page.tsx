@@ -148,7 +148,14 @@ export default function ProjectDetailPage() {
       setAuditRuns(runs as AuditRun[])
       setActiveCredential((creds as import("@/types").Credential[]).find(c => c.is_active) ?? null)
       setSystemPrompt(proj.audit_system_prompt ?? "")
-      setSelectedConnIds(new Set(conns.map(c => c.id)))
+      const saved = localStorage.getItem(`audit-conns-${id}`)
+      const allIds = new Set(conns.map(c => c.id))
+      if (saved) {
+        const parsed: string[] = JSON.parse(saved)
+        setSelectedConnIds(new Set(parsed.filter(x => allIds.has(x))))
+      } else {
+        setSelectedConnIds(allIds)
+      }
     }).finally(() => setLoading(false))
   }, [id])
 
@@ -378,6 +385,7 @@ export default function ProjectDetailPage() {
                         onChange={() => setSelectedConnIds(prev => {
                           const next = new Set(prev)
                           next.has(c.id) ? next.delete(c.id) : next.add(c.id)
+                          localStorage.setItem(`audit-conns-${id}`, JSON.stringify([...next]))
                           return next
                         })}
                         className="accent-archon-500 w-3.5 h-3.5 shrink-0 cursor-pointer"

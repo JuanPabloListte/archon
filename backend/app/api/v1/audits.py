@@ -176,8 +176,9 @@ async def _audit_stream(project_id: str, session: Session, connection_ids: list[
         ep_q = select(ApiEndpoint).where(ApiEndpoint.project_id == project_id)
         tbl_q = select(DbTable).where(DbTable.project_id == project_id)
         if connection_ids:
-            ep_q = ep_q.where(ApiEndpoint.connection_id.in_(connection_ids))
-            tbl_q = tbl_q.where(DbTable.connection_id.in_(connection_ids))
+            from sqlalchemy import or_
+            ep_q = ep_q.where(or_(ApiEndpoint.connection_id.in_(connection_ids), ApiEndpoint.connection_id == None))
+            tbl_q = tbl_q.where(or_(DbTable.connection_id.in_(connection_ids), DbTable.connection_id == None))
         endpoints = list(session.exec(ep_q).all())
         tables = list(session.exec(tbl_q).all())
         yield sse({"type": "step", "text": f"Loaded {len(endpoints)} endpoints and {len(tables)} tables"})
