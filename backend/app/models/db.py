@@ -47,6 +47,7 @@ class ApiEndpoint(SQLModel, table=True):
     __tablename__ = "api_endpoints"
     id: str = Field(default_factory=gen_uuid, primary_key=True)
     project_id: str = Field(foreign_key="projects.id", index=True)
+    connection_id: Optional[str] = Field(default=None, index=True)
     path: str
     method: str
     auth_required: bool = False
@@ -61,6 +62,7 @@ class DbTable(SQLModel, table=True):
     __tablename__ = "db_tables"
     id: str = Field(default_factory=gen_uuid, primary_key=True)
     project_id: str = Field(foreign_key="projects.id", index=True)
+    connection_id: Optional[str] = Field(default=None, index=True)
     table_name: str
     row_count: Optional[int] = None
     columns: Optional[list] = Field(default=None, sa_column=Column(JSON))

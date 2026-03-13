@@ -28,6 +28,7 @@ class AuditTriggerResponse(BaseModel):
 
 class AuditRunOptions(BaseModel):
     system_prompt: str | None = None
+    connection_ids: list[str] | None = None  # None = all connections
 
 class InsightsResponse(BaseModel):
     prioritized: List[dict]
@@ -48,12 +49,12 @@ def run_audit(
     project = session.exec(select(Project).where(Project.id == project_id, Project.owner_id == current_user.id)).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    background_tasks.add_task(run_audit_sync, project_id, body.system_prompt)
+    background_tasks.add_task(run_audit_sync, project_id, body.system_prompt, body.connection_ids)
     return AuditTriggerResponse(message="Audit started", project_id=project_id)
 
-def run_audit_sync(project_id: str, system_prompt: str | None = None):
+def run_audit_sync(project_id: str, system_prompt: str | None = None, connection_ids: list[str] | None = None):
     from app.workers.tasks import run_audit_task
-    run_audit_task(project_id, system_prompt=system_prompt)
+    run_audit_task(project_id, system_prompt=system_prompt, connection_ids=connection_ids)
 
 @router.get("/findings/{project_id}", response_model=List[FindingResponse])
 def get_findings(
@@ -135,6 +136,7 @@ def get_audit_runs(
 @router.post("/run/{project_id}/stream")
 async def run_audit_stream(
     project_id: str,
+    body: AuditRunOptions = AuditRunOptions(),
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
@@ -143,13 +145,13 @@ async def run_audit_stream(
         raise HTTPException(status_code=404, detail="Project not found")
 
     return StreamingResponse(
-        _audit_stream(project_id, session),
+        _audit_stream(project_id, session, connection_ids=body.connection_ids),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
 
 
-async def _audit_stream(project_id: str, session: Session) -> AsyncIterator[str]:
+async def _audit_stream(project_id: str, session: Session, connection_ids: list[str] | None = None) -> AsyncIterator[str]:
     def sse(event: dict) -> str:
         return f"data: {json.dumps(event)}\n\n"
 
@@ -171,8 +173,13 @@ async def _audit_stream(project_id: str, session: Session) -> AsyncIterator[str]
         session.commit()
 
         # Step 2: load data
-        endpoints = list(session.exec(select(ApiEndpoint).where(ApiEndpoint.project_id == project_id)).all())
-        tables = list(session.exec(select(DbTable).where(DbTable.project_id == project_id)).all())
+        ep_q = select(ApiEndpoint).where(ApiEndpoint.project_id == project_id)
+        tbl_q = select(DbTable).where(DbTable.project_id == project_id)
+        if connection_ids:
+            ep_q = ep_q.where(ApiEndpoint.connection_id.in_(connection_ids))
+            tbl_q = tbl_q.where(DbTable.connection_id.in_(connection_ids))
+        endpoints = list(session.exec(ep_q).all())
+        tables = list(session.exec(tbl_q).all())
         yield sse({"type": "step", "text": f"Loaded {len(endpoints)} endpoints and {len(tables)} tables"})
 
         # Load project context for AI memory

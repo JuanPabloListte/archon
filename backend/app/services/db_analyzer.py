@@ -141,7 +141,7 @@ def _get_row_count(conn, table_name: str, dialect: str) -> int:
 
 # ── Public entry point ────────────────────────────────────────────────────────
 
-def analyze_database(connection_string: str, project_id: str, session: Session):
+def analyze_database(connection_string: str, project_id: str, session: Session, connection_id: str = None):
     dialect = _get_dialect(connection_string)
     try:
         engine = _make_engine(connection_string, dialect)
@@ -155,6 +155,7 @@ def analyze_database(connection_string: str, project_id: str, session: Session):
 
                 db_table = DbTable(
                     project_id=project_id,
+                    connection_id=connection_id,
                     table_name=table_name,
                     row_count=row_count,
                     columns=columns,

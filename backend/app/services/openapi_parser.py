@@ -13,7 +13,7 @@ def _has_security(operation: dict, global_security: list) -> bool:
         return len(op_security) > 0
     return len(global_security) > 0
 
-async def parse_openapi(url: str, project_id: str, session: Session, extra_headers: dict = None):
+async def parse_openapi(url: str, project_id: str, session: Session, extra_headers: dict = None, connection_id: str = None):
     async with httpx.AsyncClient() as client:
         headers = extra_headers or {}
         resp = await client.get(url, headers=headers, follow_redirects=True, timeout=30)
@@ -24,9 +24,9 @@ async def parse_openapi(url: str, project_id: str, session: Session, extra_heade
         else:
             spec = resp.json()
 
-    _process_spec(spec, project_id, session)
+    _process_spec(spec, project_id, session, connection_id=connection_id)
 
-def parse_openapi_content(content: str | dict, project_id: str, session: Session):
+def parse_openapi_content(content: str | dict, project_id: str, session: Session, connection_id: str = None):
     if isinstance(content, str):
         try:
             spec = json.loads(content)
@@ -34,9 +34,9 @@ def parse_openapi_content(content: str | dict, project_id: str, session: Session
             spec = yaml.safe_load(content)
     else:
         spec = content
-    _process_spec(spec, project_id, session)
+    _process_spec(spec, project_id, session, connection_id=connection_id)
 
-def _process_spec(spec: dict, project_id: str, session: Session):
+def _process_spec(spec: dict, project_id: str, session: Session, connection_id: str = None):
     global_security = spec.get("security", [])
     paths = spec.get("paths", {})
 
@@ -54,6 +54,7 @@ def _process_spec(spec: dict, project_id: str, session: Session):
 
             endpoint = ApiEndpoint(
                 project_id=project_id,
+                connection_id=connection_id,
                 path=path,
                 method=method.upper(),
                 auth_required=auth_required,

@@ -134,6 +134,7 @@ export default function ProjectDetailPage() {
   const [savingPrompt, setSavingPrompt] = useState(false)
   const [promptSaved, setPromptSaved] = useState(false)
   const [showPromptPanel, setShowPromptPanel] = useState(false)
+  const [selectedConnIds, setSelectedConnIds] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     Promise.all([
@@ -147,6 +148,7 @@ export default function ProjectDetailPage() {
       setAuditRuns(runs as AuditRun[])
       setActiveCredential((creds as import("@/types").Credential[]).find(c => c.is_active) ?? null)
       setSystemPrompt(proj.audit_system_prompt ?? "")
+      setSelectedConnIds(new Set(conns.map(c => c.id)))
     }).finally(() => setLoading(false))
   }, [id])
 
@@ -155,9 +157,11 @@ export default function ProjectDetailPage() {
     setAuditProgress({ steps: [], rules: [], done: false })
     try {
       const token = getToken()
+      const connIds = [...selectedConnIds]
       const resp = await fetch(`${API_URL}/api/v1/audits/run/${id}/stream`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ connection_ids: connIds.length < connections.length ? connIds : null }),
       })
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
 
@@ -214,6 +218,7 @@ export default function ProjectDetailPage() {
       const config = connType === "openapi" ? { url: connUrl } : { connection_string: connDbStr }
       const conn = await api.connections.create(id, connType, config)
       setConnections(prev => [...prev, conn])
+      setSelectedConnIds(prev => new Set([...prev, conn.id]))
       setShowConnForm(false); setConnUrl(""); setConnDbStr("")
     } finally { setAddingConn(false) }
   }
@@ -365,8 +370,19 @@ export default function ProjectDetailPage() {
             ) : (
               <div className="space-y-2">
                 {connections.map(c => (
-                  <div key={c.id} className="text-sm t2 bg-muted rounded-lg px-3 py-2">
+                  <div key={c.id} className={`text-sm t2 bg-muted rounded-lg px-3 py-2 transition-opacity ${!selectedConnIds.has(c.id) ? "opacity-50" : ""}`}>
                     <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedConnIds.has(c.id)}
+                        onChange={() => setSelectedConnIds(prev => {
+                          const next = new Set(prev)
+                          next.has(c.id) ? next.delete(c.id) : next.add(c.id)
+                          return next
+                        })}
+                        className="accent-archon-500 w-3.5 h-3.5 shrink-0 cursor-pointer"
+                        title="Include in next audit"
+                      />
                       {c.type === "openapi" ? <LinkIcon className="w-4 h-4 text-purple-500" /> : <Database className="w-4 h-4 text-cyan-500" />}
                       <span className="capitalize">{c.type}</span>
                       <span className="ml-auto flex items-center gap-2">
@@ -375,7 +391,7 @@ export default function ProjectDetailPage() {
                         {c.status === "error" && <><XCircle className="w-3 h-3 text-red-500" /><span className="text-red-500 text-xs">Error</span></>}
                         {!c.status && <span className="t4 text-xs">{new Date(c.created_at).toLocaleDateString()}</span>}
                         <button
-                          onClick={() => { if (confirm(`Delete this ${c.type} connection?`)) api.connections.delete(c.id).then(() => setConnections(prev => prev.filter(x => x.id !== c.id))) }}
+                          onClick={() => { if (confirm(`Delete this ${c.type} connection?`)) api.connections.delete(c.id).then(() => { setConnections(prev => prev.filter(x => x.id !== c.id)); setSelectedConnIds(prev => { const n = new Set(prev); n.delete(c.id); return n }) }) }}
                           className="ml-1 t4 hover:text-red-500 transition-colors" title="Delete connection"
                         >
                           <Trash2 className="w-3.5 h-3.5" />

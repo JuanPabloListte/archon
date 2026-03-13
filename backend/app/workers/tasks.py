@@ -41,9 +41,9 @@ def run_ingestion(connection_id: str):
                 content = config.get("content")
                 headers = config.get("headers", {})
                 if url:
-                    count = asyncio.run(parse_openapi(url, conn.project_id, session, headers))
+                    count = asyncio.run(parse_openapi(url, conn.project_id, session, headers, connection_id=conn.id))
                 elif content:
-                    count = parse_openapi_content(content, conn.project_id, session)
+                    count = parse_openapi_content(content, conn.project_id, session, connection_id=conn.id)
                 else:
                     count = 0
                 _update_connection_status(connection_id, "done", count=count or 0)
@@ -53,7 +53,7 @@ def run_ingestion(connection_id: str):
                 db_url = config.get("connection_string")
                 if not db_url:
                     raise ValueError("No connection_string provided in config")
-                analyze_database(db_url, conn.project_id, session)
+                analyze_database(db_url, conn.project_id, session, connection_id=conn.id)
                 # count tables ingested
                 from sqlmodel import select as sel
                 from app.models.db import DbTable
@@ -74,7 +74,7 @@ def ingest_connection_task(connection_id: str):
     run_ingestion(connection_id)
 
 
-def run_audit_task(project_id: str, system_prompt: str | None = None):
+def run_audit_task(project_id: str, system_prompt: str | None = None, connection_ids: list[str] | None = None):
     import asyncio
     with Session(engine) as session:
         from app.audit.engine import run_audit
@@ -85,7 +85,7 @@ def run_audit_task(project_id: str, system_prompt: str | None = None):
         from sqlmodel import select
 
         # 1. Rule-based audit
-        findings = run_audit(project_id, session)
+        findings = run_audit(project_id, session, connection_ids=connection_ids)
 
         # 2. AI review pass (use active credential if available)
         try:

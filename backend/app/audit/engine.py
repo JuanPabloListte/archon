@@ -5,7 +5,7 @@ from app.audit.rules.database import missing_index, sensitive_column
 from app.audit.rules.security import sensitive_response, exposed_token
 from app.audit.rules.performance import missing_pagination, large_table_no_index
 
-def run_audit(project_id: str, session: Session) -> list[AuditFinding]:
+def run_audit(project_id: str, session: Session, connection_ids: list[str] | None = None) -> list[AuditFinding]:
     # Snapshot ignored findings before clearing (so we can restore them)
     old_findings = session.exec(select(AuditFinding).where(AuditFinding.project_id == project_id)).all()
     ignored_titles = {f.title for f in old_findings if f.status == "ignored"}
@@ -14,8 +14,14 @@ def run_audit(project_id: str, session: Session) -> list[AuditFinding]:
         session.delete(f)
     session.commit()
 
-    endpoints = session.exec(select(ApiEndpoint).where(ApiEndpoint.project_id == project_id)).all()
-    tables = session.exec(select(DbTable).where(DbTable.project_id == project_id)).all()
+    ep_query = select(ApiEndpoint).where(ApiEndpoint.project_id == project_id)
+    tbl_query = select(DbTable).where(DbTable.project_id == project_id)
+    if connection_ids:
+        ep_query = ep_query.where(ApiEndpoint.connection_id.in_(connection_ids))
+        tbl_query = tbl_query.where(DbTable.connection_id.in_(connection_ids))
+
+    endpoints = session.exec(ep_query).all()
+    tables = session.exec(tbl_query).all()
 
     all_findings: list[AuditFinding] = []
 
