@@ -17,9 +17,8 @@ def run_audit(project_id: str, session: Session, connection_ids: list[str] | Non
     ep_query = select(ApiEndpoint).where(ApiEndpoint.project_id == project_id)
     tbl_query = select(DbTable).where(DbTable.project_id == project_id)
     if connection_ids:
-        from sqlalchemy import or_
-        ep_query = ep_query.where(or_(ApiEndpoint.connection_id.in_(connection_ids), ApiEndpoint.connection_id == None))
-        tbl_query = tbl_query.where(or_(DbTable.connection_id.in_(connection_ids), DbTable.connection_id == None))
+        ep_query = ep_query.where(ApiEndpoint.connection_id.in_(connection_ids))
+        tbl_query = tbl_query.where(DbTable.connection_id.in_(connection_ids))
 
     endpoints = session.exec(ep_query).all()
     tables = session.exec(tbl_query).all()
