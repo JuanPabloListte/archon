@@ -25,6 +25,8 @@ class Project(SQLModel, table=True):
     description: Optional[str] = None
     owner_id: str = Field(foreign_key="users.id", index=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    context_json: Optional[dict] = Field(default=None, sa_column=Column(JSON))
+    audit_system_prompt: Optional[str] = Field(default=None, sa_column=Column(Text, nullable=True))
     owner: Optional[User] = Relationship(back_populates="projects")
     connections: List["ProjectConnection"] = Relationship(back_populates="project")
     endpoints: List["ApiEndpoint"] = Relationship(back_populates="project")
@@ -79,6 +81,7 @@ class AuditFinding(SQLModel, table=True):
     resource_type: Optional[str] = None
     resource_id: Optional[str] = None
     source: str = Field(default="rule")  # "rule" | "ai"
+    status: str = Field(default="open")  # "open" | "fixed" | "ignored"
     created_at: datetime = Field(default_factory=datetime.utcnow)
     project: Optional[Project] = Relationship(back_populates="findings")
 
@@ -113,3 +116,88 @@ class Report(SQLModel, table=True):
     report_json: Optional[dict] = Field(default=None, sa_column=Column(JSON))
     created_at: datetime = Field(default_factory=datetime.utcnow)
     project: Optional[Project] = Relationship(back_populates="reports")
+
+
+class GlobalKnowledge(SQLModel, table=True):
+    """Cross-project knowledge base — patterns learned from all audits."""
+    __tablename__ = "global_knowledge"
+    id: str = Field(default_factory=gen_uuid, primary_key=True)
+    category: str          # api | database | security | performance
+    severity: str          # critical | high | medium | low | info
+    title: str
+    description: str = Field(sa_column=Column(Text))
+    solution: str = Field(sa_column=Column(Text))
+    confirmed: bool = False   # True when a user marked the finding as "fixed"
+    usage_count: int = Field(default=1)
+    embedding: List[float] = Field(sa_column=Column(Vector(768)))
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class AuditRun(SQLModel, table=True):
+    __tablename__ = "audit_runs"
+    id: str = Field(default_factory=gen_uuid, primary_key=True)
+    project_id: str = Field(foreign_key="projects.id", index=True)
+    health_score: float = 0.0
+    total_findings: int = 0
+    summary: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class ApiKey(SQLModel, table=True):
+    __tablename__ = "api_keys"
+    id: str = Field(default_factory=gen_uuid, primary_key=True)
+    user_id: str = Field(foreign_key="users.id", index=True)
+    name: str
+    key_hash: str = Field(unique=True, index=True)
+    key_prefix: str           # first 12 chars of raw token, safe to display
+    is_active: bool = True
+    last_used_at: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class AuditSchedule(SQLModel, table=True):
+    __tablename__ = "audit_schedules"
+    id: str = Field(default_factory=gen_uuid, primary_key=True)
+    project_id: str = Field(foreign_key="projects.id", index=True)
+    is_active: bool = True
+    frequency: str = "weekly"            # daily | weekly | custom
+    cron_expression: Optional[str] = None  # only for frequency=custom
+    hour_utc: int = 9                    # UTC hour for daily/weekly
+    day_of_week: Optional[int] = None    # 0=Mon..6=Sun, only for weekly
+    alert_email: Optional[str] = None
+    alert_webhook_url: Optional[str] = None
+    health_score_threshold: float = 70.0
+    alert_on_critical: bool = True
+    last_run_at: Optional[datetime] = None
+    next_run_at: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class AlertEvent(SQLModel, table=True):
+    __tablename__ = "alert_events"
+    id: str = Field(default_factory=gen_uuid, primary_key=True)
+    project_id: str = Field(foreign_key="projects.id", index=True)
+    schedule_id: str = Field(foreign_key="audit_schedules.id", index=True)
+    trigger_type: str                 # health_score_drop | critical_findings | both
+    health_score: float
+    critical_count: int = 0
+    notification_sent: str = "none"   # none | email | webhook | both
+    success: bool = True
+    error_message: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class CustomRule(SQLModel, table=True):
+    __tablename__ = "custom_rules"
+    id: str = Field(default_factory=gen_uuid, primary_key=True)
+    project_id: str = Field(foreign_key="projects.id", index=True)
+    name: str
+    description: Optional[str] = None
+    category: str = "security"         # api | database | security | performance
+    severity: str = "medium"           # critical | high | medium | low | info
+    target: str = "endpoints"          # endpoints | tables
+    rule_yaml: str = Field(sa_column=Column(Text))
+    rule_json: Optional[dict] = Field(default=None, sa_column=Column(JSON))
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)

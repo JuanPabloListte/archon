@@ -1,12 +1,13 @@
 from sqlmodel import Session, select
-from app.models.db import AuditFinding
-from app.config import settings
-import httpx
+from app.models.db import AuditFinding, UserCredential
+from typing import Optional
+
 
 class AdvisorAgent:
-    def __init__(self, project_id: str, session: Session):
+    def __init__(self, project_id: str, session: Session, credential: Optional[UserCredential] = None):
         self.project_id = project_id
         self.session = session
+        self.credential = credential
 
     async def get_recommendations(self, finding_id: str) -> dict:
         finding = self.session.exec(
@@ -14,7 +15,7 @@ class AdvisorAgent:
         ).first()
 
         if not finding:
-            return {"recommendations": "Finding not found."}
+            return {"finding_id": finding_id, "recommendations": "Finding not found."}
 
         prompt = f"""You are Archon, an expert software architect and security engineer.
 
@@ -33,17 +34,12 @@ Provide detailed, actionable technical recommendations including:
 
 Be specific and practical."""
 
-        advice = await self._call_ollama(prompt)
+        advice = await self._call_ai(prompt)
         return {"finding_id": finding_id, "recommendations": advice}
 
-    async def _call_ollama(self, prompt: str) -> str:
+    async def _call_ai(self, prompt: str) -> str:
         try:
-            async with httpx.AsyncClient(timeout=60) as client:
-                resp = await client.post(
-                    f"{settings.OLLAMA_BASE_URL}/api/generate",
-                    json={"model": settings.OLLAMA_MODEL, "prompt": prompt, "stream": False},
-                )
-                resp.raise_for_status()
-                return resp.json().get("response", "")
+            from app.services.ai_client import complete
+            return await complete(prompt, self.credential)
         except Exception as e:
             return f"AI advice unavailable: {e}"

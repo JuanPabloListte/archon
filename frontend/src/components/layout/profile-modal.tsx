@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { X, User, Lock, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -44,9 +45,9 @@ export function ProfileModal({ onClose }: { onClose: () => void }) {
     finally { setSavingPw(false) }
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="bg-surface border bd1 rounded-2xl w-full max-w-md mx-4 shadow-2xl">
+  const modal = (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-surface border bd1 rounded-2xl w-full max-w-md mx-4 shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b bd1">
           <h2 className="t1 font-semibold text-lg">{t("myProfile")}</h2>
           <button onClick={onClose} className="t3 hover-t1 transition-colors">
@@ -89,4 +90,6 @@ export function ProfileModal({ onClose }: { onClose: () => void }) {
       </div>
     </div>
   )
+
+  return createPortal(modal, document.body)
 }

@@ -9,6 +9,7 @@ export interface Project {
   description: string | null
   owner_id: string
   created_at: string
+  audit_system_prompt: string | null
 }
 
 export interface Connection {
@@ -30,6 +31,7 @@ export interface Finding {
   description: string
   recommendation: string
   source: "rule" | "ai"
+  status: "open" | "fixed" | "ignored"
   created_at: string
 }
 
@@ -41,6 +43,70 @@ export interface Credential {
   model: string
   base_url: string | null
   is_active: boolean
+  created_at: string
+}
+
+export interface ApiKey {
+  id: string
+  name: string
+  key_prefix: string
+  is_active: boolean
+  last_used_at: string | null
+  created_at: string
+}
+
+export interface ApiKeyCreated extends ApiKey {
+  token: string
+}
+
+export interface AuditSchedule {
+  id: string
+  project_id: string
+  is_active: boolean
+  frequency: "daily" | "weekly" | "custom"
+  cron_expression: string | null
+  hour_utc: number
+  day_of_week: number | null
+  alert_email: string | null
+  alert_webhook_url: string | null
+  health_score_threshold: number
+  alert_on_critical: boolean
+  last_run_at: string | null
+  next_run_at: string | null
+  created_at: string
+}
+
+export interface AlertEvent {
+  id: string
+  trigger_type: string
+  health_score: number
+  critical_count: number
+  notification_sent: string
+  success: boolean
+  error_message: string | null
+  created_at: string
+}
+
+export interface CustomRule {
+  id: string
+  project_id: string
+  name: string
+  description: string | null
+  category: "api" | "database" | "security" | "performance"
+  severity: "critical" | "high" | "medium" | "low" | "info"
+  target: "endpoints" | "tables"
+  rule_yaml: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface AuditRun {
+  id: string
+  project_id: string
+  health_score: number
+  total_findings: number
+  summary: string | null
   created_at: string
 }
 

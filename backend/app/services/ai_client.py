@@ -12,20 +12,24 @@ class NoCredentialError(Exception):
     pass
 
 
-async def complete(prompt: str, credential: Optional[UserCredential] = None) -> str:
+async def complete(
+    prompt: str,
+    credential: Optional[UserCredential] = None,
+    system: Optional[str] = None,
+) -> str:
     if credential is None:
         raise NoCredentialError("No active AI credential configured. Go to Credentials and activate one.")
 
     key = decrypt(credential.api_key_encrypted, settings.SECRET_KEY) if credential.api_key_encrypted else ""
 
     if credential.provider == "anthropic":
-        return await _anthropic(prompt, credential.model, key)
+        return await _anthropic(prompt, credential.model, key, system)
 
     if credential.provider == "gemini":
-        return await _gemini(prompt, credential.model, key)
+        return await _gemini(prompt, credential.model, key, system)
 
     if credential.provider == "ollama":
-        return await _ollama(prompt, credential.model, credential.base_url or settings.OLLAMA_BASE_URL)
+        return await _ollama(prompt, credential.model, credential.base_url or settings.OLLAMA_BASE_URL, system)
 
     # OpenAI-compatible: openai, groq, mistral, custom
     base_urls = {
@@ -34,48 +38,62 @@ async def complete(prompt: str, credential: Optional[UserCredential] = None) -> 
         "mistral": "https://api.mistral.ai/v1",
     }
     base = credential.base_url or base_urls.get(credential.provider, "")
-    return await _openai_compat(prompt, credential.model, key, base)
+    return await _openai_compat(prompt, credential.model, key, base, system)
 
 
 # ── Provider implementations ──────────────────────────────────────────────────
 
-async def _anthropic(prompt: str, model: str, api_key: str) -> str:
+async def _anthropic(prompt: str, model: str, api_key: str, system: Optional[str] = None) -> str:
+    body: dict = {"model": model, "max_tokens": 2048, "messages": [{"role": "user", "content": prompt}]}
+    if system:
+        body["system"] = system
     async with httpx.AsyncClient(timeout=TIMEOUT) as client:
         r = await client.post(
             "https://api.anthropic.com/v1/messages",
             headers={"x-api-key": api_key, "anthropic-version": "2023-06-01"},
-            json={"model": model, "max_tokens": 2048, "messages": [{"role": "user", "content": prompt}]},
+            json=body,
         )
         r.raise_for_status()
         return r.json()["content"][0]["text"]
 
 
-async def _openai_compat(prompt: str, model: str, api_key: str, base_url: str) -> str:
+async def _openai_compat(prompt: str, model: str, api_key: str, base_url: str, system: Optional[str] = None) -> str:
+    messages = []
+    if system:
+        messages.append({"role": "system", "content": system})
+    messages.append({"role": "user", "content": prompt})
     async with httpx.AsyncClient(timeout=TIMEOUT) as client:
         r = await client.post(
             f"{base_url.rstrip('/')}/chat/completions",
             headers={"Authorization": f"Bearer {api_key}"},
-            json={"model": model, "messages": [{"role": "user", "content": prompt}], "temperature": 0.2},
+            json={"model": model, "messages": messages, "temperature": 0.2},
         )
         r.raise_for_status()
         return r.json()["choices"][0]["message"]["content"]
 
 
-async def _gemini(prompt: str, model: str, api_key: str) -> str:
+async def _gemini(prompt: str, model: str, api_key: str, system: Optional[str] = None) -> str:
+    body: dict = {"contents": [{"parts": [{"text": prompt}]}]}
+    if system:
+        body["system_instruction"] = {"parts": [{"text": system}]}
     async with httpx.AsyncClient(timeout=TIMEOUT) as client:
         r = await client.post(
             f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}",
-            json={"contents": [{"parts": [{"text": prompt}]}]},
+            json=body,
         )
         r.raise_for_status()
         return r.json()["candidates"][0]["content"]["parts"][0]["text"]
 
 
-async def _ollama(prompt: str, model: str, base_url: str) -> str:
+async def _ollama(prompt: str, model: str, base_url: str, system: Optional[str] = None) -> str:
+    messages = []
+    if system:
+        messages.append({"role": "system", "content": system})
+    messages.append({"role": "user", "content": prompt})
     async with httpx.AsyncClient(timeout=TIMEOUT) as client:
         r = await client.post(
             f"{base_url.rstrip('/')}/api/chat",
-            json={"model": model, "messages": [{"role": "user", "content": prompt}], "stream": False},
+            json={"model": model, "messages": messages, "stream": False},
         )
         r.raise_for_status()
         return r.json()["message"]["content"]

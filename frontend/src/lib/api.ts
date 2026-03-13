@@ -70,6 +70,11 @@ export const api = {
       }),
     get: (id: string) => request<import("@/types").Project>(`/api/v1/projects/${id}`),
     delete: (id: string) => request<void>(`/api/v1/projects/${id}`, { method: "DELETE" }),
+    updateSettings: (id: string, settings: { audit_system_prompt?: string | null }) =>
+      request<import("@/types").Project>(`/api/v1/projects/${id}/settings`, {
+        method: "PATCH",
+        body: JSON.stringify(settings),
+      }),
   },
   connections: {
     create: (projectId: string, type: string, config: Record<string, unknown>) =>
@@ -83,10 +88,18 @@ export const api = {
       request<void>(`/api/v1/connections/${connectionId}`, { method: "DELETE" }),
   },
   audits: {
-    run: (projectId: string) =>
-      request<{ message: string; project_id: string }>(`/api/v1/audits/run/${projectId}`, { method: "POST" }),
+    run: (projectId: string, options?: { system_prompt?: string }) =>
+      request<{ message: string; project_id: string }>(`/api/v1/audits/run/${projectId}`, {
+        method: "POST",
+        body: JSON.stringify(options ?? {}),
+      }),
     findings: (projectId: string) =>
       request<import("@/types").Finding[]>(`/api/v1/audits/findings/${projectId}`),
+    updateFindingStatus: (findingId: string, status: "open" | "fixed" | "ignored") =>
+      request<import("@/types").Finding>(`/api/v1/audits/findings/${findingId}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      }),
     insights: (projectId: string) =>
       request<{ prioritized: { id: string; severity: string; title: string }[]; summary: string }>(
         `/api/v1/audits/insights/${projectId}`
@@ -95,6 +108,8 @@ export const api = {
       request<{ finding_id: string; recommendations: string }>(
         `/api/v1/audits/findings/${findingId}/advice`
       ),
+    runs: (projectId: string) =>
+      request<import("@/types").AuditRun[]>(`/api/v1/audits/runs/${projectId}`),
   },
   reports: {
     latest: (projectId: string) =>
@@ -108,6 +123,16 @@ export const api = {
         method: "POST",
         body: JSON.stringify({ project_id: projectId, question }),
       }),
+  },
+  dataset: {
+    stats: () => request<{ your_findings: number; global_patterns: number; confirmed_solutions: number; total_examples: number }>("/api/v1/dataset/stats"),
+    presets: () => request<{ id: string; preview: string }[]>("/api/v1/dataset/presets"),
+    exportUrl: (fmt: "jsonl" | "alpaca" = "jsonl", preset?: string, systemPrompt?: string) => {
+      const params = new URLSearchParams({ fmt });
+      if (preset) params.set("preset", preset);
+      if (systemPrompt) params.set("system_prompt", systemPrompt);
+      return `${API_URL}/api/v1/dataset/export?${params.toString()}`;
+    },
   },
   credentials: {
     list: () => request<import("@/types").Credential[]>("/api/v1/credentials"),
@@ -131,5 +156,53 @@ export const api = {
         method: "POST",
         body: JSON.stringify({ provider, api_key, base_url }),
       }),
+  },
+  apiKeys: {
+    list: () => request<import("@/types").ApiKey[]>("/api/v1/api-keys"),
+    create: (name: string) =>
+      request<import("@/types").ApiKeyCreated>("/api/v1/api-keys", {
+        method: "POST",
+        body: JSON.stringify({ name }),
+      }),
+    revoke: (id: string) => request<void>(`/api/v1/api-keys/${id}`, { method: "DELETE" }),
+  },
+  schedules: {
+    list: (projectId: string) =>
+      request<import("@/types").AuditSchedule[]>(`/api/v1/projects/${projectId}/schedules`),
+    create: (projectId: string, data: Partial<import("@/types").AuditSchedule>) =>
+      request<import("@/types").AuditSchedule>(`/api/v1/projects/${projectId}/schedules`, {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    update: (projectId: string, scheduleId: string, data: Partial<import("@/types").AuditSchedule>) =>
+      request<import("@/types").AuditSchedule>(`/api/v1/projects/${projectId}/schedules/${scheduleId}`, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      }),
+    delete: (projectId: string, scheduleId: string) =>
+      request<void>(`/api/v1/projects/${projectId}/schedules/${scheduleId}`, { method: "DELETE" }),
+    alerts: (projectId: string, scheduleId: string) =>
+      request<import("@/types").AlertEvent[]>(`/api/v1/projects/${projectId}/schedules/${scheduleId}/alerts`),
+  },
+  customRules: {
+    list: (projectId: string) =>
+      request<import("@/types").CustomRule[]>(`/api/v1/projects/${projectId}/rules`),
+    example: () => request<{ rule_yaml: string }>("/api/v1/projects/example/rules/example"),
+    create: (projectId: string, data: { name: string; rule_yaml: string; description?: string }) =>
+      request<import("@/types").CustomRule>(`/api/v1/projects/${projectId}/rules`, {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    update: (projectId: string, ruleId: string, data: Partial<{ name: string; rule_yaml: string; description: string; is_active: boolean }>) =>
+      request<import("@/types").CustomRule>(`/api/v1/projects/${projectId}/rules/${ruleId}`, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      }),
+    delete: (projectId: string, ruleId: string) =>
+      request<void>(`/api/v1/projects/${projectId}/rules/${ruleId}`, { method: "DELETE" }),
+    test: (projectId: string, ruleId: string) =>
+      request<{ matched: number; findings: { title: string; severity: string; category: string; description: string; recommendation: string }[] }>(
+        `/api/v1/projects/${projectId}/rules/${ruleId}/test`, { method: "POST" }
+      ),
   },
 }

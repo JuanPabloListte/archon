@@ -1,12 +1,15 @@
 from sqlmodel import Session, select
-from app.models.db import ApiEndpoint, DbTable, AuditFinding
+from app.models.db import ApiEndpoint, DbTable, AuditFinding, AuditRun
 from app.audit.rules.api import missing_auth, wrong_verb, duplicate_endpoint
 from app.audit.rules.database import missing_index, sensitive_column
-from app.audit.rules.security import sensitive_response
+from app.audit.rules.security import sensitive_response, exposed_token
+from app.audit.rules.performance import missing_pagination, large_table_no_index
 
 def run_audit(project_id: str, session: Session) -> list[AuditFinding]:
-    # Clear previous findings
+    # Snapshot ignored findings before clearing (so we can restore them)
     old_findings = session.exec(select(AuditFinding).where(AuditFinding.project_id == project_id)).all()
+    ignored_titles = {f.title for f in old_findings if f.status == "ignored"}
+
     for f in old_findings:
         session.delete(f)
     session.commit()
@@ -27,6 +30,31 @@ def run_audit(project_id: str, session: Session) -> list[AuditFinding]:
 
     # Security rules
     all_findings += sensitive_response.check(list(endpoints), project_id)
+    all_findings += exposed_token.check(list(endpoints), project_id)
+
+    # Performance rules
+    all_findings += missing_pagination.check(list(endpoints), project_id)
+    all_findings += large_table_no_index.check(list(tables), project_id)
+
+    # Custom rules
+    try:
+        from app.models.db import CustomRule
+        from app.audit.custom_rule_engine import evaluate_rule
+        custom_rules = session.exec(
+            select(CustomRule).where(CustomRule.project_id == project_id, CustomRule.is_active == True)
+        ).all()
+        for rule in custom_rules:
+            if rule.rule_json:
+                all_findings += evaluate_rule(rule.rule_json, list(endpoints), list(tables), project_id)
+    except Exception as e:
+        from sqlmodel import select as _select
+        import logging
+        logging.getLogger(__name__).warning(f"Custom rules evaluation failed: {e}")
+
+    # Restore "ignored" status for matching findings
+    for finding in all_findings:
+        if finding.title in ignored_titles:
+            finding.status = "ignored"
 
     for finding in all_findings:
         session.add(finding)

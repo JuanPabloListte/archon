@@ -34,12 +34,52 @@ class QueryAgent:
 
         yield _sse({"type": "step", "text": "Searching knowledge base..."})
         context_docs = retrieve(question, self.project_id, self.session, top_k=5)
+
+        # Search global knowledge base for cross-project patterns
+        global_docs = []
+        try:
+            from app.rag.global_retriever import retrieve_global
+            global_docs = retrieve_global(question, self.session, top_k=3, min_similarity=0.65)
+        except Exception:
+            pass
+
         yield _sse({"type": "context", "sources": context_docs, "count": len(context_docs)})
-        yield _sse({"type": "step", "text": f"Found {len(context_docs)} relevant document(s)"})
+        yield _sse({"type": "step", "text": f"Found {len(context_docs)} project doc(s) + {len(global_docs)} global pattern(s)"})
+
+        # Load project memory
+        from app.models.db import Project as ProjectModel
+        from sqlmodel import select as sql_select
+        _proj = self.session.exec(sql_select(ProjectModel).where(ProjectModel.id == self.project_id)).first()
+        _ctx = _proj.context_json or {} if _proj else {}
 
         context = "\n\n".join([f"[{d['source_type']}] {d['content']}" for d in context_docs])
-        prompt = f"""You are Archon, an AI system auditor assistant. Answer the following question about the analyzed system using ONLY the provided context.
 
+        memory_section = ""
+        if _ctx.get("audit_count", 0) > 0:
+            history = _ctx.get("health_score_history", [])
+            recurring = _ctx.get("recurring_findings", [])
+            memory_section = f"""
+Project audit history ({_ctx.get('audit_count', 0)} audits):
+- Health score trend: {" → ".join(str(s) for s in history)}
+- Risk level: {_ctx.get("current_risk", "UNKNOWN")}
+- Known recurring issues: {", ".join(recurring[:5]) if recurring else "none"}
+"""
+
+        global_section = ""
+        if global_docs:
+            lines = "\n".join(
+                f"- [{g['severity'].upper()}] {g['title']} "
+                f"(seen {g['usage_count']}x across projects"
+                f"{', confirmed fix available' if g['confirmed'] else ''}): {g['solution'][:150]}"
+                for g in global_docs
+            )
+            global_section = f"""
+Similar patterns seen in other projects:
+{lines}
+"""
+
+        prompt = f"""You are Archon, an AI system auditor assistant. Answer the following question about the analyzed system using ONLY the provided context.
+{memory_section}{global_section}
 Context from the analyzed system:
 {context}
 

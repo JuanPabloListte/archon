@@ -18,11 +18,16 @@ class FindingResponse(BaseModel):
     title: str
     description: str
     recommendation: str
+    source: str = "rule"
+    status: str = "open"
     created_at: str
 
 class AuditTriggerResponse(BaseModel):
     message: str
     project_id: str
+
+class AuditRunOptions(BaseModel):
+    system_prompt: str | None = None
 
 class InsightsResponse(BaseModel):
     prioritized: List[dict]
@@ -36,18 +41,19 @@ class AdviceResponse(BaseModel):
 def run_audit(
     project_id: str,
     background_tasks: BackgroundTasks,
+    body: AuditRunOptions = AuditRunOptions(),
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
     project = session.exec(select(Project).where(Project.id == project_id, Project.owner_id == current_user.id)).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    background_tasks.add_task(run_audit_sync, project_id)
+    background_tasks.add_task(run_audit_sync, project_id, body.system_prompt)
     return AuditTriggerResponse(message="Audit started", project_id=project_id)
 
-def run_audit_sync(project_id: str):
+def run_audit_sync(project_id: str, system_prompt: str | None = None):
     from app.workers.tasks import run_audit_task
-    run_audit_task(project_id)
+    run_audit_task(project_id, system_prompt=system_prompt)
 
 @router.get("/findings/{project_id}", response_model=List[FindingResponse])
 def get_findings(
@@ -63,8 +69,66 @@ def get_findings(
         FindingResponse(
             id=f.id, project_id=f.project_id, severity=f.severity,
             category=f.category, title=f.title, description=f.description,
-            recommendation=f.recommendation, created_at=str(f.created_at)
+            recommendation=f.recommendation, source=f.source, status=f.status,
+            created_at=str(f.created_at)
         ) for f in findings
+    ]
+
+
+@router.patch("/findings/{finding_id}/status")
+def update_finding_status(
+    finding_id: str,
+    body: dict,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    finding = session.exec(select(AuditFinding).where(AuditFinding.id == finding_id)).first()
+    if not finding:
+        raise HTTPException(status_code=404, detail="Finding not found")
+    project = session.exec(select(Project).where(Project.id == finding.project_id, Project.owner_id == current_user.id)).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Finding not found")
+    new_status = body.get("status")
+    if new_status not in ("open", "fixed", "ignored"):
+        raise HTTPException(status_code=422, detail="status must be 'open', 'fixed', or 'ignored'")
+    finding.status = new_status
+    session.add(finding)
+    session.commit()
+
+    # When marked as Fixed, confirm this solution in the global knowledge base
+    if new_status == "fixed":
+        try:
+            from app.rag.global_indexer import index_findings
+            index_findings([finding], session, confirmed=True)
+        except Exception:
+            pass
+
+    session.refresh(finding)
+    return FindingResponse(
+        id=finding.id, project_id=finding.project_id, severity=finding.severity,
+        category=finding.category, title=finding.title, description=finding.description,
+        recommendation=finding.recommendation, source=finding.source, status=finding.status,
+        created_at=str(finding.created_at)
+    )
+
+
+@router.get("/runs/{project_id}")
+def get_audit_runs(
+    project_id: str,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    from app.models.db import AuditRun
+    project = session.exec(select(Project).where(Project.id == project_id, Project.owner_id == current_user.id)).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    runs = session.exec(
+        select(AuditRun).where(AuditRun.project_id == project_id).order_by(AuditRun.created_at)
+    ).all()
+    return [
+        {"id": r.id, "health_score": r.health_score, "total_findings": r.total_findings,
+         "summary": r.summary, "created_at": str(r.created_at)}
+        for r in runs
     ]
 
 
@@ -92,15 +156,17 @@ async def _audit_stream(project_id: str, session: Session) -> AsyncIterator[str]
     try:
         from app.audit.rules.api import missing_auth, wrong_verb, duplicate_endpoint
         from app.audit.rules.database import missing_index, sensitive_column
-        from app.audit.rules.security import sensitive_response
-        from app.models.db import ApiEndpoint, DbTable
+        from app.audit.rules.security import sensitive_response, exposed_token
+        from app.audit.rules.performance import missing_pagination, large_table_no_index
+        from app.models.db import ApiEndpoint, DbTable, UserCredential
         from app.reports.generator import generate_report
         from app.rag.embeddings import index_project
 
-        # Step 1: clear old findings
+        # Step 1: clear old findings (snapshot ignored first)
         yield sse({"type": "step", "text": "Clearing previous findings..."})
-        old = session.exec(select(AuditFinding).where(AuditFinding.project_id == project_id)).all()
-        for f in old:
+        old_findings_snap = session.exec(select(AuditFinding).where(AuditFinding.project_id == project_id)).all()
+        _ignored_titles = {f.title for f in old_findings_snap if f.status == "ignored"}
+        for f in old_findings_snap:
             session.delete(f)
         session.commit()
 
@@ -108,6 +174,11 @@ async def _audit_stream(project_id: str, session: Session) -> AsyncIterator[str]
         endpoints = list(session.exec(select(ApiEndpoint).where(ApiEndpoint.project_id == project_id)).all())
         tables = list(session.exec(select(DbTable).where(DbTable.project_id == project_id)).all())
         yield sse({"type": "step", "text": f"Loaded {len(endpoints)} endpoints and {len(tables)} tables"})
+
+        # Load project context for AI memory
+        from app.models.db import Project as ProjectModel
+        _project = session.exec(select(ProjectModel).where(ProjectModel.id == project_id)).first()
+        _project_context = dict(_project.context_json or {}) if _project else {}
 
         all_findings: list[AuditFinding] = []
 
@@ -127,15 +198,29 @@ async def _audit_stream(project_id: str, session: Session) -> AsyncIterator[str]
 
         # Step 5: Security rules
         yield sse({"type": "step", "text": "Running security rules...", "group": True})
-        for rule in [sensitive_response]:
+        for rule in [sensitive_response, exposed_token]:
             found = rule.check(endpoints, project_id)
             all_findings += found
             yield sse({"type": "rule", "rule": rule.__name__.split(".")[-1], "count": len(found)})
 
-        # Step 6: save
+        # Step 6: Performance rules
+        yield sse({"type": "step", "text": "Running performance rules...", "group": True})
+        for rule, data in [(missing_pagination, endpoints), (large_table_no_index, tables)]:
+            found = rule.check(data, project_id)
+            all_findings += found
+            yield sse({"type": "rule", "rule": rule.__name__.split(".")[-1], "count": len(found)})
+
+        # Step 7: save
         yield sse({"type": "step", "text": f"Saving {len(all_findings)} findings..."})
         for f in all_findings:
             session.add(f)
+        session.commit()
+
+        # Restore ignored status
+        for f in all_findings:
+            if f.title in _ignored_titles:
+                f.status = "ignored"
+                session.add(f)
         session.commit()
 
         # Step 7: report
@@ -170,7 +255,11 @@ async def get_insights(
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     from app.agents.auditor_agent import AuditorAgent
-    result = await AuditorAgent(project_id, session).prioritize_findings()
+    from app.models.db import UserCredential
+    credential = session.exec(
+        select(UserCredential).where(UserCredential.user_id == current_user.id, UserCredential.is_active == True)
+    ).first()
+    result = await AuditorAgent(project_id, session, credential).prioritize_findings()
     return InsightsResponse(**result)
 
 
@@ -183,10 +272,13 @@ async def get_finding_advice(
     finding = session.exec(select(AuditFinding).where(AuditFinding.id == finding_id)).first()
     if not finding:
         raise HTTPException(status_code=404, detail="Finding not found")
-    # Verify the finding belongs to a project owned by the current user
     project = session.exec(select(Project).where(Project.id == finding.project_id, Project.owner_id == current_user.id)).first()
     if not project:
         raise HTTPException(status_code=404, detail="Finding not found")
     from app.agents.advisor_agent import AdvisorAgent
-    result = await AdvisorAgent(finding.project_id, session).get_recommendations(finding_id)
+    from app.models.db import UserCredential
+    credential = session.exec(
+        select(UserCredential).where(UserCredential.user_id == current_user.id, UserCredential.is_active == True)
+    ).first()
+    result = await AdvisorAgent(finding.project_id, session, credential).get_recommendations(finding_id)
     return AdviceResponse(**result)

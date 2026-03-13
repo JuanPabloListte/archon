@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { clsx } from "clsx"
-import { LayoutDashboard, FolderOpen, KeyRound } from "lucide-react"
+import { LayoutDashboard, FolderOpen, KeyRound, Key } from "lucide-react"
 import { useI18n } from "@/lib/i18n"
 import { UserMenu } from "./user-menu"
 import { useEffect, useState } from "react"
@@ -23,6 +23,7 @@ export function Sidebar() {
     { href: "/dashboard",    label: t("dashboard"),    icon: LayoutDashboard },
     { href: "/projects",     label: t("projects"),     icon: FolderOpen },
     { href: "/credentials",  label: "Credentials",     icon: KeyRound },
+    { href: "/settings",     label: "API Keys",        icon: Key },
   ]
 
   return (

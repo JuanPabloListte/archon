@@ -1,4 +1,5 @@
 from celery import Celery
+from celery.schedules import crontab
 from app.config import settings
 
 celery_app = Celery(
@@ -18,6 +19,15 @@ celery_app.conf.update(
     task_routes={
         "app.workers.tasks.ingest_connection_task": {"queue": "ingestion"},
         "app.workers.tasks.run_audit_task": {"queue": "audit"},
+        "app.workers.tasks.run_audit_celery_task": {"queue": "audit"},
         "app.workers.tasks.generate_report_task": {"queue": "reports"},
+        "app.workers.tasks.dispatch_scheduled_audits": {"queue": "scheduled"},
+        "app.workers.tasks.run_scheduled_audit": {"queue": "scheduled"},
+    },
+    beat_schedule={
+        "dispatch-scheduled-audits": {
+            "task": "app.workers.tasks.dispatch_scheduled_audits",
+            "schedule": crontab(minute=0),  # every hour on the hour
+        },
     },
 )

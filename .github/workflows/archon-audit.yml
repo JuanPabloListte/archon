@@ -1,0 +1,72 @@
+name: Archon Security Audit
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  # También en schedule si quieres audits diarios desde GitHub:
+  # schedule:
+  #   - cron: '0 8 * * 1-5'  # 8am lunes a viernes
+
+jobs:
+  audit:
+    name: AI Code Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Run Archon Audit Check
+        id: archon
+        run: |
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            "${{ secrets.ARCHON_URL }}/api/v1/projects/${{ secrets.ARCHON_PROJECT_ID }}/audit/check" \
+            -H "X-API-Key: ${{ secrets.ARCHON_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "threshold": 70,
+              "fail_on": ["critical"]
+            }')
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | head -1)
+
+          echo "response=$BODY" >> $GITHUB_OUTPUT
+          echo "http_code=$HTTP_CODE" >> $GITHUB_OUTPUT
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "❌ Archon API error (HTTP $HTTP_CODE)"
+            echo "$BODY"
+            exit 1
+          fi
+
+      - name: Parse and display results
+        run: |
+          echo '${{ steps.archon.outputs.response }}' | python3 -c "
+          import sys, json
+
+          d = json.load(sys.stdin)
+          status  = d.get('status', 'unknown')
+          score   = d.get('health_score', 0)
+          total   = d.get('total_findings', 0)
+          critical = d.get('critical_count', 0)
+          high    = d.get('high_count', 0)
+          reasons = d.get('fail_reasons', [])
+
+          print('━' * 50)
+          print(f'  Archon Audit Report')
+          print('━' * 50)
+          print(f'  Status       : {\"✅ PASS\" if status == \"pass\" else \"❌ FAIL\"}')
+          print(f'  Health Score : {score}/100')
+          print(f'  Findings     : {total} total  ({critical} critical, {high} high)')
+
+          if reasons:
+              print()
+              print('  Failure reasons:')
+              for r in reasons:
+                  print(f'    • {r}')
+
+          print('━' * 50)
+
+          sys.exit(0 if status == 'pass' else 1)
+          "

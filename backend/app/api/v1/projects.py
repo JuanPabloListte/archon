@@ -18,9 +18,13 @@ class ProjectResponse(BaseModel):
     description: str | None
     owner_id: str
     created_at: str
+    audit_system_prompt: str | None = None
 
     class Config:
         from_attributes = True
+
+class ProjectSettings(BaseModel):
+    audit_system_prompt: str | None = None
 
 @router.get("", response_model=List[ProjectResponse])
 def list_projects(session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
@@ -40,7 +44,23 @@ def get_project(project_id: str, session: Session = Depends(get_session), curren
     project = session.exec(select(Project).where(Project.id == project_id, Project.owner_id == current_user.id)).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    return ProjectResponse(id=project.id, name=project.name, description=project.description, owner_id=project.owner_id, created_at=str(project.created_at))
+    return ProjectResponse(id=project.id, name=project.name, description=project.description, owner_id=project.owner_id, created_at=str(project.created_at), audit_system_prompt=project.audit_system_prompt)
+
+@router.patch("/{project_id}/settings", response_model=ProjectResponse)
+def update_project_settings(
+    project_id: str,
+    body: ProjectSettings,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    project = session.exec(select(Project).where(Project.id == project_id, Project.owner_id == current_user.id)).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    project.audit_system_prompt = body.audit_system_prompt  # None = reset to default
+    session.add(project)
+    session.commit()
+    session.refresh(project)
+    return ProjectResponse(id=project.id, name=project.name, description=project.description, owner_id=project.owner_id, created_at=str(project.created_at), audit_system_prompt=project.audit_system_prompt)
 
 @router.delete("/{project_id}", status_code=204)
 def delete_project(project_id: str, session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
